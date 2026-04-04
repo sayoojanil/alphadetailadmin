@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AlphaDetail — Admin Control</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+  :root { --p: 24px; }
+  body { padding: 0; background: #050505; color: #fff; }
+  .admin-wrap { display: flex; min-height: 100vh; }
+  .sidebar { width: 260px; background: #0a0a0a; border-right: 1px solid var(--border); padding: 40px 20px; display: flex; flex-direction: column; gap: 10px; position: fixed; height: 100vh; }
+  .sidebar-brand { margin-bottom: 45px; padding-right: 20px; }
+  .sidebar-brand .logo-img { height: 32px; width: auto; filter: brightness(1); }
+  .side-item { padding: 12px 18px; font-size: 11px; letter-spacing: 2.5px; text-transform: uppercase; color: var(--muted); cursor: pointer; transition: all .2s; border-radius: 4px; display: flex; align-items: center; gap: 12px; }
+  .side-item:hover, .side-item.act { color: var(--gold); background: rgba(212,175,55,0.05); }
+  .main-c { flex: 1; margin-left: 260px; padding: 40px 60px; }
+  .sec-h { margin-bottom: 40px; display: flex; justify-content: space-between; align-items: center; }
+  .card-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; margin-bottom: 40px; }
+  .stat-card { background: #0a0a0a; border: 1px solid var(--border); padding: 30px; }
+  .stat-val { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--gold); margin-bottom: 5px; }
+  .stat-lbl { font-size: 9px; letter-spacing: 3px; color: var(--muted); text-transform: uppercase; }
+  .table-box { background: #0a0a0a; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-top: 24px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { background: #111; color: var(--gold); font-family: 'Bebas Neue', sans-serif; letter-spacing: 2px; padding: 18px 24px; text-align: left; }
+  td { padding: 18px 24px; border-bottom: 1px solid var(--border); color: #888; }
+  tr:hover td { background: rgba(255,255,255,0.02); color: #fff; }
+  .status { font-size: 8px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; border: 1px solid; }
+  .st-ord { background: rgba(212,175,55,0.05); border-color: var(--gold); color: var(--gold); }
+  .st-sh { background: rgba(46,204,113,0.05); border-color: var(--green); color: var(--green); }
+  .st-de { background: rgba(255,255,255,0.05); border-color: #555; color: #555; }
+  .btn-sm { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; padding: 7px 14px; background: none; border: 1px solid #333; color: #888; cursor: pointer; }
+  .btn-sm:hover { color: var(--white); border-color: #555; }
+  .modal-ov { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; display: none; padding: 60px; overflow-y: auto; }
+  .mod-c { max-width: 700px; margin: 0 auto; background: #0a0a0a; padding: 40px; border-top: 3px solid var(--gold); }
+  .mod-h { font-family: 'Bebas Neue', sans-serif; font-size: 28px; margin-bottom: 24px; color: #fff; }
+  .details-row { display: none; background: #070707; }
+  .details-row.active { display: table-row; }
+  .details-box { padding: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; border-bottom: 1px solid var(--border); }
+  .d-sec-h { font-family: 'Bebas Neue', sans-serif; font-size: 14px; letter-spacing: 2px; color: var(--gold); margin-bottom: 12px; text-transform: uppercase; }
+  .d-info { font-size: 12px; color: #aaa; line-height: 1.6; }
+  .d-item { display: flex; align-items: center; gap: 15px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  .d-item:last-child { border: none; }
+  .d-img { width: 50px; height: 50px; background: #111; border-radius: 4px; overflow: hidden; }
+  .d-img img { width: 100%; height: 100%; object-fit: cover; }
+  .d-name { font-size: 13px; color: #fff; }
+  .d-qty { font-size: 11px; color: var(--muted); }
+  tr.clickable { cursor: pointer; }
+  .status-sel { background: #111; border: 1px solid #222; color: #aaa; font-size: 11px; padding: 6px 10px; border-radius: 4px; outline: none; cursor: pointer; transition: all .2s; }
+  .status-sel:hover { border-color: var(--gold); color: #fff; }
+</style>
+</head>
+<body>
+<div class="admin-wrap" id="adminDash" style="display:none;">
+  <div class="sidebar">
+    <div class="sidebar-brand"><img src="logo.png" alt="AlphaDetail Admin" class="logo-img"></div>
+    <div class="side-item act" onclick="switchA('orders',this)"><i class="fa-solid fa-list-check"></i> Orders</div>
+    <div class="side-item" onclick="switchA('products',this)"><i class="fa-solid fa-box"></i> Products</div>
+    <div class="side-item" onclick="switchA('users',this)"><i class="fa-solid fa-users"></i> Users</div>
+    <!-- <div class="side-item" onclick="switchA('settings',this)"><i class="fa-solid fa-gears"></i> Settings</div> -->
+    <div style="margin-top:auto;"><div class="side-item" style="color:var(--red);" onclick="admLogout()"><i class="fa-solid fa-right-from-bracket"></i> Sign Out</div></div>
+  </div>
+  <div class="main-c">
+    <div id="adm-orders" class="adm-sec">
+      <div class="sec-h"><h2 class="s-h2">ORDER MANAGEMENT</h2><button class="btn-o" onclick="loadOrders()">Refresh <i class="fa-solid fa-arrows-rotate"></i></button></div>
+      <div class="card-g">
+        <div class="stat-card"><div class="stat-val" id="count-pending">0</div><div class="stat-lbl">Pending Orders</div></div>
+        <div class="stat-card"><div class="stat-val" id="count-today">₹0</div><div class="stat-lbl">Today's Revenue</div></div>
+        <div class="stat-card"><div class="stat-val" id="count-total">0</div><div class="stat-lbl">Total Sales</div></div>
+      </div>
+      <div class="table-box">
+        <table>
+          <thead><tr><th>Order #</th><th>Customer</th><th>Status</th><th>Total</th><th>Method</th><th>Action</th></tr></thead>
+          <tbody id="orderList"></tbody>
+        </table>
+      </div>
+    </div>
+    <div id="adm-products" class="adm-sec" style="display:none;">
+      <div class="sec-h"><h2 class="s-h2">PRODUCT INVENTORY</h2><button class="btn-g" onclick="openProdMod('new')">+ New Product</button></div>
+      <div id="prodGrid" class="shop-grid"></div>
+    </div>
+    <div id="adm-users" class="adm-sec" style="display:none;">
+      <div class="sec-h"><h2 class="s-h2">USER ACCOUNTS</h2><button class="btn-o" onclick="loadUsers()">Refresh →</button></div>
+      <div class="table-box">
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Action</th></tr></thead>
+          <tbody id="userList"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-ov" id="prodMod">
+  <div class="mod-c">
+    <h3 class="mod-h" id="modTitle">NEW PRODUCT</h3>
+    <form id="prodForm" onsubmit="saveProd(event)">
+      <div class="fg2">
+        <div class="fg"><label class="fl">Internal ID (e.g. nano)</label><input class="fi" id="pId" required></div>
+        <div class="fg"><label class="fl">Series Code</label><input class="fi" id="pCode" placeholder="AL-S1 / NF"></div>
+      </div>
+      <div class="fg"><label class="fl">Product Name</label><input class="fi" id="pName" required></div>
+      <div class="fg"><label class="fl">Subtitle</label><input class="fi" id="pSub"></div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Price (₹)</label><input class="fi" type="number" id="pPrice" required></div>
+        <div class="fg"><label class="fl">Category</label><select class="fi" id="pCat"><option value="exterior">Exterior</option><option value="interior">Interior</option><option value="tyre">Tyre & Trim</option></select></div>
+      </div>
+      <div class="fg"><label class="fl">Hook / Key Statement</label><input class="fi" id="pHook"></div>
+      <div class="fg"><label class="fl">Description (HTML allowed)</label><textarea class="fi" id="pDesc" style="height:100px;"></textarea></div>
+      <div class="fg2">
+        <div class="fg"><label class="fl">Features (Comma separated)</label><input class="fi" id="pFeats" placeholder="Touchless, 1:800, etc."></div>
+        <div class="fg"><label class="fl">Tags (Comma separated)</label><input class="fi" id="pTags" placeholder="Exterior, Shampoo, etc."></div>
+      </div>
+      <div class="fg"><label class="fl">Main Images (Select up to 3)</label><input class="fi" type="file" id="pImages" multiple accept="image/*"></div>
+      <div style="display:flex;gap:12px;margin-top:30px;">
+        <button class="btn-g" style="flex:1;">Save Product →</button>
+        <button type="button" class="btn-o" onclick="document.getElementById('prodMod').style.display='none'">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div id="admLogin" class="auth-pg">
+  <div class="auth-box">
+    <div class="auth-brand">AlphaDetail Admin</div>
+    <div class="auth-title">ADMIN LOGIN</div><p class="auth-sub">Enter credentials to access dashboard</p>
+    <div class="fg"><label class="fl">Email</label><input class="fi" id="admEmail" type="email"></div>
+    <div class="fg"><label class="fl">Password</label><input class="fi" id="admPass" type="password"></div>
+    <button class="auth-sub-btn" onclick="doAdmLogin()">Sign In Dashboard →</button>
+  </div>
+</div>
+
+<div class="snack" id="snack"></div>
+
+<script>
+  const API = 'https://alphadetailserver.onrender.com/api';
+  let admUser = null;
+
+  async function admReq(path, opt={}) {
+    if (admUser) { opt.headers = { ...opt.headers, 'Authorization': `Bearer ${admUser.token}` }; }
+    try {
+      const res = await fetch(API + path, opt);
+      let data;
+      const text = await res.text();
+      try { data = JSON.parse(text); } catch(e) { data = { error: 'Server responded with an error' }; }
+      if (!res.ok) { snack('<i class="fa-solid fa-circle-xmark"></i> Error: ' + (data.error || 'Request failed')); throw data; }
+      return data;
+    } catch (err) {
+      console.error('Helper Error:', err);
+      if(!err.error) snack('<i class="fa-solid fa-circle-xmark"></i> Network Error: Could not connect to API');
+      throw err;
+    }
+  }
+
+  async function doAdmLogin() {
+    const email = document.getElementById('admEmail').value;
+    const password = document.getElementById('admPass').value;
+    try {
+      const data = await admReq('/auth/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      if (data.role !== 'admin') return snack('Access Denied: Not an admin');
+      admUser = data;
+      localStorage.setItem('admUser', JSON.stringify(data));
+      document.getElementById('admLogin').style.display = 'none';
+      document.getElementById('adminDash').style.display = 'flex';
+      loadOrders(); loadProducts(); loadUsers();
+    } catch(e){}
+  }
+
+  function admLogout() {
+    snack('<i class="fa-solid fa-right-from-bracket"></i> Signing out... Clear skies!');
+    localStorage.removeItem('admUser'); 
+    setTimeout(() => window.location.reload(), 800); 
+  }
+
+  async function loadOrders() {
+    const list = await admReq('/orders/admin');
+    const el = document.getElementById('orderList');
+    el.innerHTML = list.map(o => `
+      <tr class="clickable" onclick="toggleOrder('${o.orderNum}')">
+        <td>#${o.orderNum}</td>
+        <td><div>${o.user?.firstName || 'Guest'} ${o.user?.lastName || ''}</div><div style="font-size:10px;">${o.user?.email || ''}</div></td>
+        <td><span class="status ${o.status==='delivered'?'st-sh':(o.status==='cancelled'?'st-de':'st-ord')}">${o.status}</span></td>
+        <td>₹${o.total.toLocaleString('en-IN')}</td>
+        <td>${o.paymentMethod.toUpperCase()}</td>
+        <td>
+          <select class="status-sel" onclick="event.stopPropagation()" onchange="updStatus('${o.orderNum}', this.value)">
+            <option value="ordered" ${o.status==='ordered'?'selected':''}>ORDERED</option>
+            <option value="processing" ${o.status==='processing'?'selected':''}>PROCESSING</option>
+            <option value="shipped" ${o.status==='shipped'?'selected':''}>SHIPPED</option>
+            <option value="delivered" ${o.status==='delivered'?'selected':''}>DELIVERED</option>
+            <option value="cancelled" ${o.status==='cancelled'?'selected':''}>CANCELLED</option>
+          </select>
+        </td>
+      </tr>
+      <tr id="details-${o.orderNum}" class="details-row">
+        <td colspan="6">
+          <div class="details-box">
+            <div>
+              <div class="d-sec-h">Customer & Address</div>
+              <div class="d-info">
+                <strong>Name:</strong> ${o.address.first} ${o.address.last || ''}<br>
+                <strong>Email:</strong> ${o.address.email}<br>
+                <strong>Phone:</strong> ${o.address.phone}<br><br>
+                <strong>Address:</strong><br>
+                ${o.address.addr}<br>
+                ${o.address.city}, ${o.address.pin}<br>
+                ${o.address.state}
+              </div>
+            </div>
+            <div>
+              <div class="d-sec-h">Order Items</div>
+              ${o.items.map(i => `
+                <div class="d-item">
+                  <div class="d-img">
+                    <img src="${(i.product && i.product.imgs && i.product.imgs[0]) || ''}" alt="">
+                  </div>
+                  <div style="flex:1;">
+                    <div class="d-name">${i.name}</div>
+                    <div class="d-qty">Quantity: ${i.qty} — ₹${i.price.toLocaleString('en-IN')} each</div>
+                  </div>
+                  <div class="d-name">₹${(i.price * i.qty).toLocaleString('en-IN')}</div>
+                </div>
+              `).join('')}
+              <div style="margin-top:20px; text-align:right;">
+                <div class="d-info">Subtotal: ₹${o.subtotal.toLocaleString('en-IN')}</div>
+                <div class="d-info">Shipping: ₹${o.shipping.toLocaleString('en-IN')}</div>
+                <div class="d-info" style="color:#fff; font-size:14px; margin-top:5px;">Total: ₹${o.total.toLocaleString('en-IN')}</div>
+              </div>
+            </div>
+          </div>
+        </td>
+      </tr>`).join('');
+    document.getElementById('count-total').textContent = list.length;
+  }
+
+  function toggleOrder(id) {
+    const el = document.getElementById('details-' + id);
+    if (el) el.classList.toggle('active');
+  }
+
+
+
+  async function updStatus(id, s) {
+    if(!s) return;
+    try {
+      await admReq('/orders/' + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: s }) });
+      snack('<i class="fa-solid fa-circle-check"></i> Status changed to ' + s.toUpperCase());
+      loadOrders(); // Refresh to update stats/totals if any
+    } catch(e){}
+  }
+
+  function editP(id) {
+    const p = PRODS_LIST.find(x => x.id === id);
+    if(!p) return;
+    document.getElementById('pId').value = p.id;
+    document.getElementById('pId').readOnly = true;
+    document.getElementById('pCode').value = p.code || '';
+    document.getElementById('pName').value = p.name;
+    document.getElementById('pSub').value = p.sub || '';
+    document.getElementById('pPrice').value = p.price;
+    document.getElementById('pCat').value = p.cat;
+    document.getElementById('pHook').value = p.hook || '';
+    document.getElementById('pDesc').value = p.desc || '';
+    document.getElementById('pFeats').value = (p.feats || []).join(', ');
+    document.getElementById('pTags').value = (p.tags || []).join(', ');
+    document.getElementById('modTitle').textContent = 'EDIT PRODUCT';
+    openProdMod('edit');
+  }
+
+  let PRODS_LIST = [];
+  async function loadProducts() {
+    const list = await admReq('/products');
+    PRODS_LIST = list;
+    const el = document.getElementById('prodGrid');
+    el.innerHTML = list.map(p => `
+      <div class="pcard">
+        <div class="pc-img"><img src="${p.imgs && p.imgs[0] ? p.imgs[0] : ''}" alt="${p.name}"></div>
+        <div class="pc-body">
+          <div class="pc-name">${p.name}</div>
+          <div class="pc-price">₹${p.price.toLocaleString('en-IN')}</div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button class="btn-sm" style="flex:1;" onclick="editP('${p.id}')">Edit</button>
+            <button class="btn-sm" style="color:var(--red);" onclick="delP('${p.id}')"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  async function delP(id) {
+    if(!confirm('Are you sure you want to delete this product?')) return;
+    try {
+      await admReq('/products/' + id, { method: 'DELETE' });
+      snack('Product deleted! <i class="fa-solid fa-trash-can"></i>');
+      loadProducts();
+    } catch(e){}
+  }
+
+  async function loadUsers() {
+    const list = await admReq('/users');
+    const el = document.getElementById('userList');
+    el.innerHTML = list.map(u => `
+      <tr>
+        <td>${u.firstName} ${u.lastName || ''}</td>
+        <td>${u.email}</td>
+        <td><span class="status ${u.role==='admin'?'st-sh':'st-ord'}">${u.role.toUpperCase()}</span></td>
+        <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+        <td><button class="btn-sm" style="color:var(--red);" onclick="delUser('${u._id}')">Delete</button></td>
+      </tr>`).join('');
+  }
+
+  async function delUser(id) {
+    if(!confirm('Are you sure you want to delete this user?')) return;
+    try {
+      await admReq('/users/' + id, { method: 'DELETE' });
+      snack('User deleted successfully! <i class="fa-solid fa-circle-check"></i>');
+      loadUsers();
+    } catch(e){}
+  }
+
+  function openProdMod(type = 'new') { 
+    if(type==='new') {
+      document.getElementById('prodForm').reset();
+      document.getElementById('pId').readOnly = false;
+      document.getElementById('modTitle').textContent = 'NEW PRODUCT';
+    }
+    document.getElementById('prodMod').style.display = 'block'; 
+  }
+
+  async function saveProd(e) {
+    e.preventDefault();
+    const fd = new FormData();
+    fd.append('id', document.getElementById('pId').value);
+    fd.append('code', document.getElementById('pCode').value);
+    fd.append('name', document.getElementById('pName').value);
+    fd.append('sub', document.getElementById('pSub').value);
+    fd.append('price', document.getElementById('pPrice').value);
+    fd.append('cat', document.getElementById('pCat').value);
+    fd.append('hook', document.getElementById('pHook').value);
+    fd.append('desc', document.getElementById('pDesc').value);
+    
+    // Process comma-separated strings into arrays for the backend
+    const feats = document.getElementById('pFeats').value.split(',').map(s => s.trim()).filter(s => s);
+    const tags = document.getElementById('pTags').value.split(',').map(s => s.trim()).filter(s => s);
+    fd.append('feats', JSON.stringify(feats));
+    fd.append('tags', JSON.stringify(tags));
+
+    const imgs = document.getElementById('pImages').files;
+    for(let i=0; i<imgs.length; i++) fd.append('images', imgs[i]);
+    
+    snack('<i class="fa-solid fa-spinner fa-spin"></i> Uploading product data...');
+    try {
+      await admReq('/products', { method: 'POST', body: fd });
+      snack('Product saved successfully! <i class="fa-solid fa-circle-check"></i>');
+      document.getElementById('prodMod').style.display = 'none';
+      loadProducts();
+    } catch(e) {}
+  }
+
+  function snack(m){ const s=document.getElementById('snack'); s.innerHTML=m; s.classList.add('show'); setTimeout(()=>s.classList.remove('show'),3000); }
+
+  function switchA(s, el) {
+    document.querySelectorAll('.adm-sec').forEach(x => x.style.display = 'none');
+    document.getElementById('adm-' + s).style.display = 'block';
+    document.querySelectorAll('.side-item').forEach(x => x.classList.remove('act'));
+    el.classList.add('act');
+  }
+
+  window.onload = () => {
+    const u = localStorage.getItem('admUser');
+    if (u) {
+      admUser = JSON.parse(u);
+      document.getElementById('admLogin').style.display = 'none';
+      document.getElementById('adminDash').style.display = 'flex';
+      loadOrders(); loadProducts(); loadUsers();
+    }
+  };
+</script>
+</body>
+</html>
