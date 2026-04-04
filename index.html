@@ -128,7 +128,7 @@
     <div class="auth-title">ADMIN LOGIN</div><p class="auth-sub">Enter credentials to access dashboard</p>
     <div class="fg"><label class="fl">Email</label><input class="fi" id="admEmail" type="email"></div>
     <div class="fg"><label class="fl">Password</label><input class="fi" id="admPass" type="password"></div>
-    <button class="auth-sub-btn" onclick="doAdmLogin()">Sign In Dashboard →</button>
+    <button class="auth-sub-btn" onclick="doAdmLogin(this)">Sign In Dashboard →</button>
   </div>
 </div>
 
@@ -154,21 +154,41 @@
     }
   }
 
-  async function doAdmLogin() {
+  async function doAdmLogin(btn) {
+    if (!btn) btn = document.querySelector('.auth-sub-btn');
     const email = document.getElementById('admEmail').value;
     const password = document.getElementById('admPass').value;
+    const origText = btn.innerHTML;
+    
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing In...';
+    btn.style.opacity = '0.7';
+    btn.style.pointerEvents = 'none';
+
     try {
       const data = await admReq('/auth/login', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
-      if (data.role !== 'admin') return snack('Access Denied: Not an admin');
+      if (data.role !== 'admin') {
+        btn.innerHTML = origText;
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+        return snack('Access Denied: Not an admin');
+      }
       admUser = data;
       localStorage.setItem('admUser', JSON.stringify(data));
       document.getElementById('admLogin').style.display = 'none';
       document.getElementById('adminDash').style.display = 'flex';
       loadOrders(); loadProducts(); loadUsers();
-    } catch(e){}
+      
+      btn.innerHTML = origText;
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+    } catch(e) {
+      btn.innerHTML = origText;
+      btn.style.opacity = '1';
+      btn.style.pointerEvents = 'auto';
+    }
   }
 
   function admLogout() {
