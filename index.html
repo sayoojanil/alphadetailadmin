@@ -105,12 +105,15 @@
       <div class="fg"><label class="fl">Subtitle</label><input class="fi" id="pSub"></div>
       <div class="fg2">
         <div class="fg"><label class="fl">Price (₹)</label><input class="fi" type="number" id="pPrice" required></div>
-        <div class="fg"><label class="fl">Category</label><select class="fi" id="pCat"><option value="exterior">Exterior</option><option value="interior">Interior</option><option value="tyre">Tyre & Trim</option></select></div>
+        <div class="fg"><label class="fl">Stock Status</label><select class="fi" id="pStock"><option value="true">In Stock</option><option value="false">Out of Stock</option></select></div>
       </div>
-      <div class="fg"><label class="fl">Hook / Key Statement</label><input class="fi" id="pHook"></div>
-      <div class="fg"><label class="fl">Description (HTML allowed)</label><textarea class="fi" id="pDesc" style="height:100px;"></textarea></div>
+      <div class="fg"><label class="fl">Category</label><select class="fi" id="pCat"><option value="exterior">Exterior</option><option value="interior">Interior</option><option value="tyre">Tyre & Trim</option></select></div>
+      <div class="fg"><label class="fl">Headline (e.g. ONE BOTTLE. 200+ WASHES.)</label><input class="fi" id="pHook"></div>
+      <div class="fg"><label class="fl">Description (Paragraphs, HTML allowed)</label><textarea class="fi" id="pDesc" style="height:100px;"></textarea></div>
+      <div class="fg"><label class="fl">The Alpha Advantage (Highlighted box, HTML allowed)</label><textarea class="fi" id="pAdv" style="height:80px;" placeholder="Foam cannon: 100-150g per 1L | Hand sprayer: 1:800 dilution"></textarea></div>
+      <div class="fg"><label class="fl">How to Use (One step per line)</label><textarea class="fi" id="pHow" style="height:130px;" placeholder="Spray on surface&#10;Agitate with brush&#10;Rinse off with water"></textarea></div>
       <div class="fg2">
-        <div class="fg"><label class="fl">Features (Comma separated)</label><input class="fi" id="pFeats" placeholder="Touchless, 1:800, etc."></div>
+        <div class="fg"><label class="fl">Key Benefits (One per line)</label><textarea class="fi" id="pFeats" style="height:100px;" placeholder="**Benefit 1** — description&#10;**Benefit 2** — description"></textarea></div>
         <div class="fg"><label class="fl">Tags (Comma separated)</label><input class="fi" id="pTags" placeholder="Exterior, Shampoo, etc."></div>
       </div>
       <div class="fg"><label class="fl">Main Images (Select up to 3)</label><input class="fi" type="file" id="pImages" multiple accept="image/*"></div>
@@ -136,6 +139,7 @@
 
 <script>
   const API = 'https://alphadetailserver.onrender.com/api';
+  // const API = 'http://localhost:5000/api';
   let admUser = null;
 
   async function admReq(path, opt={}) {
@@ -283,10 +287,13 @@
     document.getElementById('pName').value = p.name;
     document.getElementById('pSub').value = p.sub || '';
     document.getElementById('pPrice').value = p.price;
+    document.getElementById('pStock').value = p.inStock !== false ? 'true' : 'false';
     document.getElementById('pCat').value = p.cat;
     document.getElementById('pHook').value = p.hook || '';
     document.getElementById('pDesc').value = p.desc || '';
-    document.getElementById('pFeats').value = (p.feats || []).join(', ');
+    document.getElementById('pAdv').value = p.advantage || '';
+    document.getElementById('pHow').value = (p.howToUse || []).join('\n');
+    document.getElementById('pFeats').value = (p.feats || []).join('\n');
     document.getElementById('pTags').value = (p.tags || []).join(', ');
     document.getElementById('modTitle').textContent = 'EDIT PRODUCT';
     openProdMod('edit');
@@ -302,7 +309,7 @@
         <div class="pc-img"><img src="${p.imgs && p.imgs[0] ? p.imgs[0] : ''}" alt="${p.name}"></div>
         <div class="pc-body">
           <div class="pc-name">${p.name}</div>
-          <div class="pc-price">₹${p.price.toLocaleString('en-IN')}</div>
+          <div class="pc-price">₹${p.price.toLocaleString('en-IN')} <span style="font-size:11px; margin-left:6px; color:${p.inStock !== false ? 'var(--green)' : 'var(--red)'}">${p.inStock !== false ? 'In Stock' : 'Out of Stock'}</span></div>
           <div style="display:flex;gap:8px;margin-top:10px;">
             <button class="btn-sm" style="flex:1;" onclick="editP('${p.id}')">Edit</button>
             <button class="btn-sm" style="color:var(--red);" onclick="delP('${p.id}')"><i class="fa-solid fa-trash"></i></button>
@@ -359,12 +366,18 @@
     fd.append('name', document.getElementById('pName').value);
     fd.append('sub', document.getElementById('pSub').value);
     fd.append('price', document.getElementById('pPrice').value);
+    fd.append('inStock', document.getElementById('pStock').value);
     fd.append('cat', document.getElementById('pCat').value);
     fd.append('hook', document.getElementById('pHook').value);
     fd.append('desc', document.getElementById('pDesc').value);
+    fd.append('advantage', document.getElementById('pAdv').value);
+    
+    // Process steps into an array
+    const steps = document.getElementById('pHow').value.split('\n').map(s => s.trim()).filter(s => s);
+    fd.append('howToUse', JSON.stringify(steps));
     
     // Process comma-separated strings into arrays for the backend
-    const feats = document.getElementById('pFeats').value.split(',').map(s => s.trim()).filter(s => s);
+    const feats = document.getElementById('pFeats').value.split('\n').map(s => s.trim()).filter(s => s);
     const tags = document.getElementById('pTags').value.split(',').map(s => s.trim()).filter(s => s);
     fd.append('feats', JSON.stringify(feats));
     fd.append('tags', JSON.stringify(tags));
