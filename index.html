@@ -50,12 +50,79 @@
   tr.clickable { cursor: pointer; }
   .status-sel { background: #111; border: 1px solid #222; color: #aaa; font-size: 11px; padding: 6px 10px; border-radius: 4px; outline: none; cursor: pointer; transition: all .2s; }
   .status-sel:hover { border-color: var(--gold); color: #fff; }
+
+  /* Mobile Admin Styles */
+  .mob-h-bar { display: none; background: #0a0a0a; border-bottom: 1px solid var(--border); padding: 15px 25px; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1500; }
+  .mob-h-bar .logo-img { height: 24px; width: auto; }
+  .hamburger-adm { background: none; border: none; color: var(--gold); font-size: 20px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-family: 'DM Sans', sans-serif; font-size: 10px; letter-spacing: 2px; text-transform: uppercase; font-weight: 700; }
+
+  @media (max-width: 992px) {
+    .admin-wrap { flex-direction: column; }
+    .sidebar { transform: translateX(-100%); transition: transform 0.4s cubic-bezier(0.77, 0, 0.175, 1); z-index: 1600; width: 280px; }
+    .sidebar.open { transform: translateX(0); }
+    .main-c { margin-left: 0; padding: 30px 20px; }
+    .mob-h-bar { display: flex; }
+    .side-item { padding: 16px 20px; font-size: 12px; }
+    .sec-h { flex-direction: column; align-items: flex-start; gap: 20px; }
+    .table-box { border: none; border-radius: 0; margin-left: -20px; margin-right: -20px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { min-width: 600px; }
+    .card-g { grid-template-columns: 1fr; }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 1550; backdrop-filter: blur(4px); }
+    .sidebar-overlay.active { display: block; }
+    #sideClose { display: block; }
+
+    /* Modal & Layout Refinements */
+    .modal-ov { padding: 0; }
+    .mod-c { width: 100%; max-width: 100%; border-radius: 0; padding: 25px; min-height: 100vh; }
+    .details-box { grid-template-columns: 1fr; gap: 30px; padding: 20px; }
+    .fg2 { flex-direction: column; gap: 15px; }
+    .fg2 .fg { width: 100%; }
+    .main-c { padding: 25px 15px; }
+    .pcard { margin-bottom: 20px; }
+    .auth-box { width: 90%; padding: 30px 20px; }
+    .sec-h .s-h2 { font-size: 28px; }
+    
+    /* Stats */
+    .stat-card { padding: 20px; }
+    .stat-val { font-size: 26px; }
+
+    /* Shop Grid Overrides */
+    .shop-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 768px) {
+    .main-c { padding: 20px 10px; }
+    .sec-h .s-h2 { font-size: 24px; }
+    .stat-card { padding: 15px; }
+  }
+
+  /* Ensure the auth page is centered even with style.css conflicts */
+  .auth-pg { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
+  .user-av { width: 32px; height: 32px; border-radius: 50%; overflow: hidden; flex-shrink: 0; box-shadow: 0 4px 8px rgba(0,0,0,0.3); cursor: pointer; transition: transform .2s; }
+  .user-av:hover { transform: scale(1.1); border-color: #fff; }
+  .user-av img { width: 100%; height: 100%; object-fit: cover; }
+  #imgMod { display: none; align-items: center; justify-content: center; }
+
+  .search-box { position: relative; display: flex; align-items: center; background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 6px; padding: 0 12px; height: 36px; transition: border-color .3s; width: 300px; }
+  .search-box:focus-within { border-color: var(--gold); }
+  .search-box i { color: var(--muted); font-size: 13px; margin-right: 10px; }
+  .search-box input { background: none; border: none; color: var(--white); font-size: 13px; width: 100%; outline: none; }
+  .sec-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; gap: 20px; }
+  .sec-h h2 { margin-bottom: 0; flex-shrink: 0; }
 </style>
 </head>
 <body>
+<div id="adminOverlay" class="sidebar-overlay" onclick="toggleAdmMenu()"></div>
 <div class="admin-wrap" id="adminDash" style="display:none;">
-  <div class="sidebar">
-    <div class="sidebar-brand"><img src="logo.png" alt="AlphaDetail Admin" class="logo-img"></div>
+  <div class="mob-h-bar">
+    <img src="logo.png" alt="AlphaDetail" class="logo-img">
+    <button class="hamburger-adm" onclick="toggleAdmMenu()"><i class="fa-solid fa-bars"></i> MENU</button>
+  </div>
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+       <img src="logo.png" alt="AlphaDetail Admin" class="logo-img">
+       <button class="btn-sm" style="float:right; margin-top:5px; display:none;" id="sideClose" onclick="toggleAdmMenu()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
     <div class="side-item act" onclick="switchA('orders',this)"><i class="fa-solid fa-list-check"></i> Orders</div>
     <div class="side-item" onclick="switchA('products',this)"><i class="fa-solid fa-box"></i> Products</div>
     <div class="side-item" onclick="switchA('users',this)"><i class="fa-solid fa-users"></i> Users</div>
@@ -64,7 +131,11 @@
   </div>
   <div class="main-c">
     <div id="adm-orders" class="adm-sec">
-      <div class="sec-h"><h2 class="s-h2">ORDER MANAGEMENT</h2><button class="btn-o" onclick="loadOrders()">Refresh <i class="fa-solid fa-arrows-rotate"></i></button></div>
+      <div class="sec-h">
+        <h2 class="s-h2">ORDER MANAGEMENT</h2>
+        <div class="search-box"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="orderSearch" placeholder="Search Order #, Name, Email..." oninput="filterOrders()"></div>
+        <button class="btn-o" onclick="loadOrders()">Refresh <i class="fa-solid fa-arrows-rotate"></i></button>
+      </div>
       <div class="card-g">
         <div class="stat-card"><div class="stat-val" id="count-pending">0</div><div class="stat-lbl">Pending Orders</div></div>
         <div class="stat-card"><div class="stat-val" id="count-today">₹0</div><div class="stat-lbl">Today's Revenue</div></div>
@@ -78,11 +149,19 @@
       </div>
     </div>
     <div id="adm-products" class="adm-sec" style="display:none;">
-      <div class="sec-h"><h2 class="s-h2">PRODUCT INVENTORY</h2><button class="btn-g" onclick="openProdMod('new')">+ New Product</button></div>
+      <div class="sec-h">
+        <h2 class="s-h2">PRODUCT INVENTORY</h2>
+        <div class="search-box"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="prodSearch" placeholder="Search Products..." oninput="filterProducts()"></div>
+        <button class="btn-g" onclick="openProdMod('new')">+ New Product</button>
+      </div>
       <div id="prodGrid" class="shop-grid"></div>
     </div>
     <div id="adm-users" class="adm-sec" style="display:none;">
-      <div class="sec-h"><h2 class="s-h2">USER ACCOUNTS</h2><button class="btn-o" onclick="loadUsers()">Refresh →</button></div>
+      <div class="sec-h">
+        <h2 class="s-h2">USER ACCOUNTS</h2>
+        <div class="search-box"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="userSearch" placeholder="Search Name, Email..." oninput="filterUsers()"></div>
+        <button class="btn-o" onclick="loadUsers()">Refresh →</button>
+      </div>
       <div class="table-box">
         <table>
           <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Action</th></tr></thead>
@@ -97,31 +176,38 @@
   <div class="mod-c">
     <h3 class="mod-h" id="modTitle">NEW PRODUCT</h3>
     <form id="prodForm" onsubmit="saveProd(event)">
-      <div class="fg2">
-        <div class="fg"><label class="fl">Internal ID (e.g. nano)</label><input class="fi" id="pId" required></div>
-        <div class="fg"><label class="fl">Series Code</label><input class="fi" id="pCode" placeholder="AL-S1 / NF"></div>
+      <div class="fg2" style="display:flex;gap:15px;">
+        <div class="fg" style="flex:1;"><label class="fl">Internal ID (e.g. nano)</label><input class="fi" id="pId" required></div>
+        <div class="fg" style="flex:1;"><label class="fl">Series Code</label><input class="fi" id="pCode" placeholder="AL-S1 / NF"></div>
       </div>
       <div class="fg"><label class="fl">Product Name</label><input class="fi" id="pName" required></div>
       <div class="fg"><label class="fl">Subtitle</label><input class="fi" id="pSub"></div>
-      <div class="fg2">
-        <div class="fg"><label class="fl">Price (₹)</label><input class="fi" type="number" id="pPrice" required></div>
-        <div class="fg"><label class="fl">Stock Status</label><select class="fi" id="pStock"><option value="true">In Stock</option><option value="false">Out of Stock</option></select></div>
+      <div class="fg2" style="display:flex;gap:15px;">
+        <div class="fg" style="flex:1;"><label class="fl">Price (₹)</label><input class="fi" type="number" id="pPrice" required></div>
+        <div class="fg" style="flex:1;"><label class="fl">Stock Status</label><select class="fi" id="pStock"><option value="true">In Stock</option><option value="false">Out of Stock</option></select></div>
       </div>
       <div class="fg"><label class="fl">Category</label><select class="fi" id="pCat"><option value="exterior">Exterior</option><option value="interior">Interior</option><option value="tyre">Tyre & Trim</option></select></div>
       <div class="fg"><label class="fl">Headline (e.g. ONE BOTTLE. 200+ WASHES.)</label><input class="fi" id="pHook"></div>
       <div class="fg"><label class="fl">Description (Paragraphs, HTML allowed)</label><textarea class="fi" id="pDesc" style="height:100px;"></textarea></div>
       <div class="fg"><label class="fl">The Alpha Advantage (Highlighted box, HTML allowed)</label><textarea class="fi" id="pAdv" style="height:80px;" placeholder="Foam cannon: 100-150g per 1L | Hand sprayer: 1:800 dilution"></textarea></div>
       <div class="fg"><label class="fl">How to Use (One step per line)</label><textarea class="fi" id="pHow" style="height:130px;" placeholder="Spray on surface&#10;Agitate with brush&#10;Rinse off with water"></textarea></div>
-      <div class="fg2">
-        <div class="fg"><label class="fl">Key Benefits (One per line)</label><textarea class="fi" id="pFeats" style="height:100px;" placeholder="**Benefit 1** — description&#10;**Benefit 2** — description"></textarea></div>
-        <div class="fg"><label class="fl">Tags (Comma separated)</label><input class="fi" id="pTags" placeholder="Exterior, Shampoo, etc."></div>
+      <div class="fg2" style="display:flex;gap:15px;">
+        <div class="fg" style="flex:1;"><label class="fl">Key Benefits (One per line)</label><textarea class="fi" id="pFeats" style="height:100px;" placeholder="**Benefit 1** — description&#10;**Benefit 2** — description"></textarea></div>
+        <div class="fg" style="flex:1;"><label class="fl">Tags (Comma separated)</label><input class="fi" id="pTags" placeholder="Exterior, Shampoo, etc."></div>
       </div>
       <div class="fg"><label class="fl">Main Images (Select up to 3)</label><input class="fi" type="file" id="pImages" multiple accept="image/*"></div>
       <div style="display:flex;gap:12px;margin-top:30px;">
-        <button class="btn-g" style="flex:1;">Save Product →</button>
+        <button class="btn-g" id="btnSaveProd" style="flex:1;">Save Product →</button>
         <button type="button" class="btn-o" onclick="document.getElementById('prodMod').style.display='none'">Cancel</button>
       </div>
     </form>
+  </div>
+</div>
+
+<div class="modal-ov" id="imgMod" onclick="this.style.display='none'">
+  <div style="max-width:90%; max-height:90%; position:relative; margin:auto;">
+    <img id="fullImg" src="" style="width:100%; height:auto; border:2px solid var(--gold); box-shadow: 0 20px 40px rgba(0,0,0,0.8);">
+    <button class="btn-sm" style="position:fixed; top:20px; right:20px; background:rgba(0,0,0,0.5); border:1px solid #fff; color:#fff;"><i class="fa-solid fa-xmark"></i> CLOSE</button>
   </div>
 </div>
 
@@ -135,12 +221,15 @@
   </div>
 </div>
 
-<div class="snack" id="snack"></div>
+<div id="toastContainer" class="sonner-container"></div>
 
 <script>
-  const API = 'https://alphadetailserver.onrender.com/api';
+  // const API = 'https://alphadetailserver.onrender.com/api';
+  const API = 'https://alphadetailserver.vercel.app/api';
+
   // const API = 'http://localhost:5000/api';
   let admUser = null;
+  let isLoggingOut = false;
 
   async function admReq(path, opt={}) {
     if (admUser) { opt.headers = { ...opt.headers, 'Authorization': `Bearer ${admUser.token}` }; }
@@ -149,11 +238,19 @@
       let data;
       const text = await res.text();
       try { data = JSON.parse(text); } catch(e) { data = { error: 'Server responded with an error' }; }
-      if (!res.ok) { snack('<i class="fa-solid fa-circle-xmark"></i> Error: ' + (data.error || 'Request failed')); throw data; }
+      if (res.status === 401 || res.status === 403) {
+        if(admUser && !isLoggingOut) {
+           isLoggingOut = true;
+           snack('Session expired or unauthorized. Please re-login.', 'error');
+           admLogout();
+        }
+        throw data;
+      }
+      if (!res.ok) { snack(data.error || 'Request failed', 'error'); throw data; }
       return data;
     } catch (err) {
       console.error('Helper Error:', err);
-      if(!err.error) snack('<i class="fa-solid fa-circle-xmark"></i> Network Error: Could not connect to API');
+      if(!err.error) snack('Network Error: Could not connect to API', 'error');
       throw err;
     }
   }
@@ -177,7 +274,7 @@
         btn.innerHTML = origText;
         btn.style.opacity = '1';
         btn.style.pointerEvents = 'auto';
-        return snack('Access Denied: Not an admin');
+        return snack('Access Denied: Not an admin', 'error');
       }
       admUser = data;
       localStorage.setItem('admUser', JSON.stringify(data));
@@ -196,23 +293,57 @@
   }
 
   function admLogout() {
-    snack('<i class="fa-solid fa-right-from-bracket"></i> Signing out... Clear skies!');
+    isLoggingOut = true;
+    snack('Signing out... Clear skies!');
     localStorage.removeItem('admUser'); 
+    admUser = null;
     setTimeout(() => window.location.reload(), 800); 
   }
 
+  let allOrders = [], allProducts = [], allUsers = [];
+
   async function loadOrders() {
-    const list = await admReq('/orders/admin');
+    const listEl = document.getElementById('orderList');
+    listEl.innerHTML = '<tr><td colspan="6"><div class="grid-loader"><div class="spinner"></div><div class="spinner-text">Loading Orders...</div></div></td></tr>';
+    
+    try {
+      allOrders = await admReq('/orders/admin');
+      const pending = allOrders.filter(o => !['delivered', 'cancelled'].includes(o.status)).length;
+      const today = new Date().toDateString();
+      const todayRev = allOrders.filter(o => {
+        const isToday = new Date(o.createdAt).toDateString() === today;
+        const isFinanced = o.paymentStatus === 'paid' || o.paymentMethod === 'cod';
+        return isToday && isFinanced && o.status !== 'cancelled';
+      }).reduce((acc, o) => acc + o.total, 0);
+      const totalSales = allOrders.filter(o => o.status !== 'cancelled').length;
+
+      document.getElementById('count-pending').textContent = pending;
+      document.getElementById('count-today').textContent = '₹' + Math.round(todayRev).toLocaleString('en-IN');
+      document.getElementById('count-total').textContent = totalSales;
+      renderOrders(allOrders);
+    } catch (e) {
+      listEl.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:60px;color:var(--muted);letter-spacing:2px;font-size:11px;">UNABLE TO LOAD ORDERS. CHECK CONNECTION.</td></tr>';
+    }
+  }
+
+  function renderOrders(list) {
     const el = document.getElementById('orderList');
     el.innerHTML = list.map(o => `
       <tr class="clickable" onclick="toggleOrder('${o.orderNum}')">
         <td>#${o.orderNum}</td>
-        <td><div>${o.user?.firstName || 'Guest'} ${o.user?.lastName || ''}</div><div style="font-size:10px;">${o.user?.email || ''}</div></td>
-        <td><span class="status ${o.status==='delivered'?'st-sh':(o.status==='cancelled'?'st-de':'st-ord')}">${o.status}</span></td>
-        <td>₹${o.total.toLocaleString('en-IN')}</td>
-        <td>${o.paymentMethod.toUpperCase()}</td>
         <td>
-          <select class="status-sel" onclick="event.stopPropagation()" onchange="updStatus('${o.orderNum}', this.value)">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div class="user-av" onclick="showImg('${(o.user && o.user.avatar) || 'https://ui-avatars.com/api/?name=' + o.address.first + '&background=d4af37&color=000&bold=true'}', event)">
+              <img src="${(o.user && o.user.avatar) || 'https://ui-avatars.com/api/?name=' + o.address.first + '&background=d4af37&color=000&bold=true'}" alt="">
+            </div>
+            <div>${o.address.first} ${o.address.last || ''}<div style="font-size:10px;color:var(--muted)">${o.address.email}</div></div>
+          </div>
+        </td>
+        <td><span class="status st-${o.status}">${o.status.toUpperCase()}</span></td>
+        <td>₹${o.total.toLocaleString('en-IN')}</td>
+        <td><span class="pm-badge">${o.paymentMethod.toUpperCase()}</span></td>
+        <td>
+          <select onclick="event.stopPropagation()" onchange="updStatus('${o.orderNum}', this.value)" style="background:var(--mid);color:#fff;border:1px solid #333;padding:5px;font-size:11px;">
             <option value="ordered" ${o.status==='ordered'?'selected':''}>ORDERED</option>
             <option value="processing" ${o.status==='processing'?'selected':''}>PROCESSING</option>
             <option value="shipped" ${o.status==='shipped'?'selected':''}>SHIPPED</option>
@@ -240,9 +371,6 @@
               <div class="d-sec-h">Order Items</div>
               ${o.items.map(i => `
                 <div class="d-item">
-                  <div class="d-img">
-                    <img src="${(i.product && i.product.imgs && i.product.imgs[0]) || ''}" alt="">
-                  </div>
                   <div style="flex:1;">
                     <div class="d-name">${i.name}</div>
                     <div class="d-qty">Quantity: ${i.qty} — ₹${i.price.toLocaleString('en-IN')} each</div>
@@ -259,7 +387,17 @@
           </div>
         </td>
       </tr>`).join('');
-    document.getElementById('count-total').textContent = list.length;
+  }
+
+  function filterOrders() {
+    const q = document.getElementById('orderSearch').value.toLowerCase();
+    const filtered = allOrders.filter(o => 
+      o.orderNum.toLowerCase().includes(q) || 
+      o.address.first.toLowerCase().includes(q) || 
+      (o.address.last && o.address.last.toLowerCase().includes(q)) || 
+      o.address.email.toLowerCase().includes(q)
+    );
+    renderOrders(filtered);
   }
 
   function toggleOrder(id) {
@@ -267,19 +405,55 @@
     if (el) el.classList.toggle('active');
   }
 
-
-
   async function updStatus(id, s) {
     if(!s) return;
     try {
       await admReq('/orders/' + id, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: s }) });
-      snack('<i class="fa-solid fa-circle-check"></i> Status changed to ' + s.toUpperCase());
-      loadOrders(); // Refresh to update stats/totals if any
+      snack('Status changed to ' + s.toUpperCase(), 'success');
+      loadOrders(); 
     } catch(e){}
   }
 
+  async function loadProducts() {
+    const gridEl = document.getElementById('prodGrid');
+    gridEl.innerHTML = '<div class="grid-loader"><div class="spinner"></div><div class="spinner-text">Accessing Inventory...</div></div>';
+    
+    try {
+      allProducts = await admReq('/products');
+      renderProducts(allProducts);
+    } catch(e) {
+      gridEl.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:100px;color:var(--muted);letter-spacing:2px;font-size:11px;">UNABLE TO LOAD PRODUCTS.</div>';
+    }
+  }
+
+  function renderProducts(list) {
+    const el = document.getElementById('prodGrid');
+    el.innerHTML = list.map(p => `
+      <div class="pcard">
+        <div class="pc-img"><img src="${p.imgs && p.imgs[0] ? p.imgs[0] : ''}" alt="${p.name}"></div>
+        <div class="pc-body">
+          <div class="pc-name">${p.name}</div>
+          <div class="pc-price">₹${p.price.toLocaleString('en-IN')} <span style="font-size:11px; margin-left:6px; color:${p.inStock !== false ? 'var(--green)' : 'var(--red)'}">${p.inStock !== false ? 'In Stock' : 'Out of Stock'}</span></div>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <button class="btn-sm" style="flex:1;" onclick="editP('${p.id}')">Edit</button>
+            <button class="btn-sm" style="color:var(--red);" onclick="delP('${p._id}')"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  function filterProducts() {
+    const q = document.getElementById('prodSearch').value.toLowerCase();
+    const filtered = allProducts.filter(p => 
+      p.name.toLowerCase().includes(q) || 
+      p.cat.toLowerCase().includes(q) || 
+      (p.tags && p.tags.some(t => t.toLowerCase().includes(q)))
+    );
+    renderProducts(filtered);
+  }
+
   function editP(id) {
-    const p = PRODS_LIST.find(x => x.id === id);
+    const p = allProducts.find(x => x.id === id);
     if(!p) return;
     document.getElementById('pId').value = p.id;
     document.getElementById('pId').readOnly = true;
@@ -299,52 +473,69 @@
     openProdMod('edit');
   }
 
-  let PRODS_LIST = [];
-  async function loadProducts() {
-    const list = await admReq('/products');
-    PRODS_LIST = list;
-    const el = document.getElementById('prodGrid');
-    el.innerHTML = list.map(p => `
-      <div class="pcard">
-        <div class="pc-img"><img src="${p.imgs && p.imgs[0] ? p.imgs[0] : ''}" alt="${p.name}"></div>
-        <div class="pc-body">
-          <div class="pc-name">${p.name}</div>
-          <div class="pc-price">₹${p.price.toLocaleString('en-IN')} <span style="font-size:11px; margin-left:6px; color:${p.inStock !== false ? 'var(--green)' : 'var(--red)'}">${p.inStock !== false ? 'In Stock' : 'Out of Stock'}</span></div>
-          <div style="display:flex;gap:8px;margin-top:10px;">
-            <button class="btn-sm" style="flex:1;" onclick="editP('${p.id}')">Edit</button>
-            <button class="btn-sm" style="color:var(--red);" onclick="delP('${p.id}')"><i class="fa-solid fa-trash"></i></button>
-          </div>
-        </div>
-      </div>`).join('');
-  }
-
   async function delP(id) {
     if(!confirm('Are you sure you want to delete this product?')) return;
     try {
       await admReq('/products/' + id, { method: 'DELETE' });
-      snack('Product deleted! <i class="fa-solid fa-trash-can"></i>');
+      snack('Product deleted successfully!', 'success');
       loadProducts();
     } catch(e){}
   }
 
   async function loadUsers() {
-    const list = await admReq('/users');
+    const listEl = document.getElementById('userList');
+    listEl.innerHTML = '<tr><td colspan="5"><div class="grid-loader"><div class="spinner"></div><div class="spinner-text">Retrieving User Accounts...</div></div></td></tr>';
+    
+    try {
+      allUsers = await admReq('/users');
+      renderUsers(allUsers);
+    } catch(e) {
+      listEl.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:60px;color:var(--muted);letter-spacing:2px;font-size:11px;">UNABLE TO LOAD USERS.</td></tr>';
+    }
+  }
+
+  function renderUsers(list) {
     const el = document.getElementById('userList');
-    el.innerHTML = list.map(u => `
-      <tr>
-        <td>${u.firstName} ${u.lastName || ''}</td>
-        <td>${u.email}</td>
-        <td><span class="status ${u.role==='admin'?'st-sh':'st-ord'}">${u.role.toUpperCase()}</span></td>
-        <td>${new Date(u.createdAt).toLocaleDateString()}</td>
-        <td><button class="btn-sm" style="color:var(--red);" onclick="delUser('${u._id}')">Delete</button></td>
-      </tr>`).join('');
+    el.innerHTML = list.map(u => {
+      const ad = 'https://ui-avatars.com/api/?name=' + u.firstName + '&background=d4af37&color=000&bold=true';
+      return `
+        <tr>
+          <td>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="user-av" onclick="showImg('${u.avatar || ad}', event)"><img src="${u.avatar || ad}" alt=""></div>
+              <span>${u.firstName} ${u.lastName || ''}</span>
+            </div>
+          </td>
+          <td>${u.email}</td>
+          <td><span class="status ${u.role==='admin'?'st-sh':'st-ord'}">${u.role.toUpperCase()}</span></td>
+          <td>${new Date(u.createdAt).toLocaleDateString()}</td>
+          <td><button class="btn-sm" style="color:var(--red);" onclick="delUser('${u._id}')">Delete</button></td>
+        </tr>`;
+    }).join('');
+  }
+
+  function filterUsers() {
+    const q = document.getElementById('userSearch').value.toLowerCase();
+    const filtered = allUsers.filter(u => 
+      u.firstName.toLowerCase().includes(q) || 
+      (u.lastName && u.lastName.toLowerCase().includes(q)) || 
+      u.email.toLowerCase().includes(q)
+    );
+    renderUsers(filtered);
+  }
+
+  function showImg(src, e) {
+    if(e) e.stopPropagation();
+    const mod = document.getElementById('imgMod');
+    document.getElementById('fullImg').src = src;
+    mod.style.display = 'flex';
   }
 
   async function delUser(id) {
     if(!confirm('Are you sure you want to delete this user?')) return;
     try {
       await admReq('/users/' + id, { method: 'DELETE' });
-      snack('User deleted successfully! <i class="fa-solid fa-circle-check"></i>');
+      snack('User deleted successfully!', 'success');
       loadUsers();
     } catch(e){}
   }
@@ -360,6 +551,13 @@
 
   async function saveProd(e) {
     e.preventDefault();
+    const btn = document.getElementById('btnSaveProd');
+    const isEdit = document.getElementById('modTitle').textContent.includes('EDIT');
+    const origText = btn.innerHTML;
+
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving...';
+    btn.disabled = true;
+
     const fd = new FormData();
     fd.append('id', document.getElementById('pId').value);
     fd.append('code', document.getElementById('pCode').value);
@@ -372,11 +570,9 @@
     fd.append('desc', document.getElementById('pDesc').value);
     fd.append('advantage', document.getElementById('pAdv').value);
     
-    // Process steps into an array
     const steps = document.getElementById('pHow').value.split('\n').map(s => s.trim()).filter(s => s);
     fd.append('howToUse', JSON.stringify(steps));
     
-    // Process comma-separated strings into arrays for the backend
     const feats = document.getElementById('pFeats').value.split('\n').map(s => s.trim()).filter(s => s);
     const tags = document.getElementById('pTags').value.split(',').map(s => s.trim()).filter(s => s);
     fd.append('feats', JSON.stringify(feats));
@@ -385,22 +581,55 @@
     const imgs = document.getElementById('pImages').files;
     for(let i=0; i<imgs.length; i++) fd.append('images', imgs[i]);
     
-    snack('<i class="fa-solid fa-spinner fa-spin"></i> Uploading product data...');
+    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processing...';
+    btn.style.pointerEvents = 'none';
+    btn.style.opacity = '0.7';
+
     try {
       await admReq('/products', { method: 'POST', body: fd });
-      snack('Product saved successfully! <i class="fa-solid fa-circle-check"></i>');
+      snack(`Product ${isEdit ? 'updated' : 'added'} successfully!`, 'success');
       document.getElementById('prodMod').style.display = 'none';
       loadProducts();
-    } catch(e) {}
+    } catch(e) {
+      console.error(e);
+    } finally {
+      btn.innerHTML = origText;
+      btn.style.pointerEvents = 'all';
+      btn.style.opacity = '1';
+    }
   }
 
-  function snack(m){ const s=document.getElementById('snack'); s.innerHTML=m; s.classList.add('show'); setTimeout(()=>s.classList.remove('show'),3000); }
+  function snack(msg, type = 'default') {
+    const container = document.getElementById('toastContainer');
+    const t = document.createElement('div');
+    t.className = `sonner-toast ${type}`;
+    t.innerHTML = `
+      <div class="sonner-content">
+        <i class="sonner-icon fa-solid ${type==='success'?'fa-circle-check':(type==='error'?'fa-circle-xmark':'fa-circle-info')}"></i>
+        <div class="sonner-msg">${msg}</div>
+      </div>
+      <button class="sonner-close" onclick="this.parentElement.remove()"><i class="fa-solid fa-xmark"></i></button>
+    `;
+    container.appendChild(t);
+    setTimeout(() => {
+      t.classList.add('out');
+      setTimeout(() => t.remove(), 400);
+    }, 4000);
+  }
+
+  function toggleAdmMenu() {
+    const side = document.getElementById('sidebar');
+    const over = document.getElementById('adminOverlay');
+    side.classList.toggle('open');
+    over.classList.toggle('active');
+  }
 
   function switchA(s, el) {
     document.querySelectorAll('.adm-sec').forEach(x => x.style.display = 'none');
     document.getElementById('adm-' + s).style.display = 'block';
     document.querySelectorAll('.side-item').forEach(x => x.classList.remove('act'));
     el.classList.add('act');
+    if(window.innerWidth <= 992) toggleAdmMenu();
   }
 
   window.onload = () => {
