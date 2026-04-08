@@ -211,6 +211,7 @@
   </div>
 </div>
 
+
 <div id="admLogin" class="auth-pg">
   <div class="auth-box">
     <div class="auth-brand">AlphaDetail Admin</div>
@@ -224,10 +225,8 @@
 <div id="toastContainer" class="sonner-container"></div>
 
 <script>
-  // const API = 'https://alphadetailserver.onrender.com/api';
-  const API = 'https://alphadetailserver.vercel.app/api';
-
-  // const API = 'http://localhost:5000/api';
+  const API = 'http://localhost:5000/api';
+  // const API = 'https://alphadetailserver.vercel.app/api';
   let admUser = null;
   let isLoggingOut = false;
 
@@ -238,6 +237,11 @@
       let data;
       const text = await res.text();
       try { data = JSON.parse(text); } catch(e) { data = { error: 'Server responded with an error' }; }
+      
+      if (res.status === 429) {
+        throw data; // Rate limit exceeded
+      }
+      
       if (res.status === 401 || res.status === 403) {
         if(admUser && !isLoggingOut) {
            isLoggingOut = true;
@@ -250,7 +254,7 @@
       return data;
     } catch (err) {
       console.error('Helper Error:', err);
-      if(!err.error) snack('Network Error: Could not connect to API', 'error');
+      // Already handled by snack inside or will be handled by caller
       throw err;
     }
   }
@@ -280,15 +284,37 @@
       localStorage.setItem('admUser', JSON.stringify(data));
       document.getElementById('admLogin').style.display = 'none';
       document.getElementById('adminDash').style.display = 'flex';
-      loadOrders(); loadProducts(); loadUsers();
+      await Promise.all([loadProducts(), loadUsers()]);
+      loadOrders();
       
       btn.innerHTML = origText;
       btn.style.opacity = '1';
       btn.style.pointerEvents = 'auto';
-    } catch(e) {
-      btn.innerHTML = origText;
-      btn.style.opacity = '1';
-      btn.style.pointerEvents = 'auto';
+    } catch(err) {
+      if (err.retryAfter) {
+        let remaining = Math.ceil(err.retryAfter / 1000);
+        snack(err.error || 'Too many attempts', 'error');
+        
+        const updateBtn = () => {
+          if (remaining <= 0) {
+            btn.innerHTML = origText;
+            btn.style.opacity = '1';
+            btn.style.pointerEvents = 'auto';
+            return;
+          }
+          const m = Math.floor(remaining / 60);
+          const s = remaining % 60;
+          btn.innerHTML = `<i class="fa-solid fa-clock"></i> Try in ${m}m ${s}s`;
+          remaining--;
+          setTimeout(updateBtn, 1000);
+        };
+        updateBtn();
+      } else {
+        btn.innerHTML = origText;
+        btn.style.opacity = '1';
+        btn.style.pointerEvents = 'auto';
+        if(err.error) snack(err.error, 'error');
+      }
     }
   }
 
@@ -494,6 +520,7 @@
     }
   }
 
+
   function renderUsers(list) {
     const el = document.getElementById('userList');
     el.innerHTML = list.map(u => {
@@ -626,7 +653,8 @@
 
   function switchA(s, el) {
     document.querySelectorAll('.adm-sec').forEach(x => x.style.display = 'none');
-    document.getElementById('adm-' + s).style.display = 'block';
+    const sec = document.getElementById('adm-' + s);
+    if (sec) sec.style.display = 'block';
     document.querySelectorAll('.side-item').forEach(x => x.classList.remove('act'));
     el.classList.add('act');
     if(window.innerWidth <= 992) toggleAdmMenu();
@@ -638,7 +666,9 @@
       admUser = JSON.parse(u);
       document.getElementById('admLogin').style.display = 'none';
       document.getElementById('adminDash').style.display = 'flex';
-      loadOrders(); loadProducts(); loadUsers();
+      Promise.all([loadProducts(), loadUsers()]).then(() => {
+        loadOrders();
+      });
     }
   };
 </script>
