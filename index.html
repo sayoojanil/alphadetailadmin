@@ -143,7 +143,7 @@
       </div>
       <div class="table-box">
         <table>
-          <thead><tr><th>Order #</th><th>Customer</th><th>Status</th><th>Total</th><th>Method</th><th>Action</th></tr></thead>
+          <thead><tr><th>Order #</th><th>Customer</th><th>Status</th><th>Total</th><th>Time</th><th>Method</th><th>Action</th></tr></thead>
           <tbody id="orderList"></tbody>
         </table>
       </div>
@@ -254,7 +254,13 @@
       return data;
     } catch (err) {
       console.error('Helper Error:', err);
-      // Already handled by snack inside or will be handled by caller
+      if (err instanceof TypeError) {
+        snack('Network Error: Please check if server is running.', 'error');
+      } else if (err.error) {
+        // Already snacked in res.ok check or handled by caller
+      } else {
+        snack('An unexpected error occurred.', 'error');
+      }
       throw err;
     }
   }
@@ -338,8 +344,9 @@
       const today = new Date().toDateString();
       const todayRev = allOrders.filter(o => {
         const isToday = new Date(o.createdAt).toDateString() === today;
-        const isFinanced = o.paymentStatus === 'paid' || o.paymentMethod === 'cod';
-        return isToday && isFinanced && o.status !== 'cancelled';
+        // Accurate Revenue: Only count paid orders, or COD orders that are already delivered
+        const isActuallyPaid = o.paymentStatus === 'paid' || (o.paymentMethod === 'cod' && o.status === 'delivered');
+        return isToday && isActuallyPaid && o.status !== 'cancelled';
       }).reduce((acc, o) => acc + o.total, 0);
       const totalSales = allOrders.filter(o => o.status !== 'cancelled').length;
 
@@ -367,15 +374,22 @@
         </td>
         <td><span class="status st-${o.status}">${o.status.toUpperCase()}</span></td>
         <td>₹${o.total.toLocaleString('en-IN')}</td>
+        <td>
+          <div style="font-size:11px; color:#fff;">${new Date(o.createdAt).toLocaleDateString('en-IN', {day:'2-digit', month:'short'})}</div>
+          <div style="font-size:10px; color:var(--muted);">${new Date(o.createdAt).toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'})}</div>
+        </td>
         <td><span class="pm-badge">${o.paymentMethod.toUpperCase()}</span></td>
         <td>
-          <select onclick="event.stopPropagation()" onchange="updStatus('${o.orderNum}', this.value)" style="background:var(--mid);color:#fff;border:1px solid #333;padding:5px;font-size:11px;">
-            <option value="ordered" ${o.status==='ordered'?'selected':''}>ORDERED</option>
-            <option value="processing" ${o.status==='processing'?'selected':''}>PROCESSING</option>
-            <option value="shipped" ${o.status==='shipped'?'selected':''}>SHIPPED</option>
-            <option value="delivered" ${o.status==='delivered'?'selected':''}>DELIVERED</option>
-            <option value="cancelled" ${o.status==='cancelled'?'selected':''}>CANCELLED</option>
-          </select>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <select onclick="event.stopPropagation()" onchange="updStatus('${o.orderNum}', this.value)" style="background:var(--mid);color:#fff;border:1px solid #333;padding:5px;font-size:11px;flex:1;">
+              <option value="ordered" ${o.status==='ordered'?'selected':''}>ORDERED</option>
+              <option value="processing" ${o.status==='processing'?'selected':''}>PROCESSING</option>
+              <option value="shipped" ${o.status==='shipped'?'selected':''}>SHIPPED</option>
+              <option value="delivered" ${o.status==='delivered'?'selected':''}>DELIVERED</option>
+              <option value="cancelled" ${o.status==='cancelled'?'selected':''}>CANCELLED</option>
+            </select>
+            <button class="btn-sm" style="color:var(--red); padding: 5px 8px;" onclick="event.stopPropagation(); delOrder('${o.orderNum}')"><i class="fa-solid fa-trash"></i></button>
+          </div>
         </td>
       </tr>
       <tr id="details-${o.orderNum}" class="details-row">
@@ -383,19 +397,25 @@
           <div class="details-box">
             <div>
               <div class="d-sec-h">Customer & Address</div>
+              <div class="d-info" style="margin-bottom: 12px; font-size: 11px; opacity: 0.8;">
+                <i class="fa-solid fa-clock"></i> Ordered At: ${new Date(o.createdAt).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' })}
+              </div>
               <div class="d-info">
                 <strong>Name:</strong> ${o.address.first} ${o.address.last || ''}<br>
                 <strong>Email:</strong> ${o.address.email}<br>
-                <strong>Phone:</strong> ${o.address.phone}<br><br>
+                <strong>Phone:</strong> ${o.address.phoneCode || '+91'} ${o.address.phone}<br>
+                ${o.address.secondaryPhone ? `<strong>Secondary Phone:</strong> ${o.address.secondaryPhone}<br>` : ''}<br>
                 <strong>Address:</strong><br>
+                ${o.address.houseNo ? o.address.houseNo + '<br>' : ''}
                 ${o.address.addr}<br>
-                ${o.address.city}, ${o.address.pin}<br>
-                ${o.address.state}
+                ${o.address.landmark ? 'Landmark: ' + o.address.landmark + '<br>' : ''}
+                ${o.address.city}${o.address.district ? ', ' + o.address.district : ''}, ${o.address.pin}<br>
+                ${o.address.state}, ${o.address.country || 'India'}
               </div>
             </div>
             <div>
               <div class="d-sec-h">Order Items</div>
-              ${o.items.map(i => `
+              ${o.items.map(i => `  
                 <div class="d-item">
                   <div style="flex:1;">
                     <div class="d-name">${i.name}</div>
@@ -440,6 +460,15 @@
     } catch(e){}
   }
 
+  async function delOrder(id) {
+    if(!confirm(`Are you sure you want to PERMANENTLY delete Order #${id}?`)) return;
+    try {
+      await admReq('/orders/' + id, { method: 'DELETE' });
+      snack(`Order #${id} deleted successfully!`, 'success');
+      loadOrders(); 
+    } catch(e){}
+  }
+
   async function loadProducts() {
     const gridEl = document.getElementById('prodGrid');
     gridEl.innerHTML = '<div class="grid-loader"><div class="spinner"></div><div class="spinner-text">Accessing Inventory...</div></div>';
@@ -462,7 +491,7 @@
           <div class="pc-price">₹${p.price.toLocaleString('en-IN')} <span style="font-size:11px; margin-left:6px; color:${p.inStock !== false ? 'var(--green)' : 'var(--red)'}">${p.inStock !== false ? 'In Stock' : 'Out of Stock'}</span></div>
           <div style="display:flex;gap:8px;margin-top:10px;">
             <button class="btn-sm" style="flex:1;" onclick="editP('${p.id}')">Edit</button>
-            <button class="btn-sm" style="color:var(--red);" onclick="delP('${p._id}')"><i class="fa-solid fa-trash"></i></button>
+            <button class="btn-sm" style="color:var(--red);" onclick="delP('${p.id}')"><i class="fa-solid fa-trash"></i></button>
           </div>
         </div>
       </div>`).join('');
@@ -619,10 +648,12 @@
       loadProducts();
     } catch(e) {
       console.error(e);
+      // Errors are now snacked by the improved admReq helper
     } finally {
       btn.innerHTML = origText;
       btn.style.pointerEvents = 'all';
       btn.style.opacity = '1';
+      btn.disabled = false;
     }
   }
 
