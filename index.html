@@ -28,9 +28,14 @@
   td { padding: 18px 24px; border-bottom: 1px solid var(--border); color: #888; }
   tr:hover td { background: rgba(255,255,255,0.02); color: #fff; }
   .status { font-size: 8px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; border: 1px solid; }
-  .st-ord { background: rgba(212,175,55,0.05); border-color: var(--gold); color: var(--gold); }
-  .st-sh { background: rgba(46,204,113,0.05); border-color: var(--green); color: var(--green); }
-  .st-de { background: rgba(255,255,255,0.05); border-color: #555; color: #555; }
+  .st-ord, .st-ordered { background: rgba(212,175,55,0.05); border-color: var(--gold); color: var(--gold); }
+  .st-pen, .st-pending { background: rgba(255,165,0,0.05); border-color: #ffa500; color: #ffa500; }
+  .st-sh, .st-shipped { background: rgba(46,204,113,0.05); border-color: var(--green); color: var(--green); }
+  .st-de, .st-delivered { background: rgba(255,255,255,0.05); border-color: #555; color: #555; }
+  
+  .pm-badge { font-size: 9px; padding: 3px 8px; border-radius: 4px; background: #1a1a1a; color: #aaa; border: 1px solid #333; }
+  .pm-whatsapp { border-color: #25D366; color: #25D366; background: rgba(37,211,102,0.05); }
+  .pm-cod { border-color: #f1c40f; color: #f1c40f; background: rgba(241,196,15,0.05); }
   .btn-sm { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; padding: 7px 14px; background: none; border: 1px solid #333; color: #888; cursor: pointer; }
   .btn-sm:hover { color: var(--white); border-color: #555; }
   .modal-ov { position: fixed; inset: 0; background: rgba(0,0,0,0.9); z-index: 2000; display: none; padding: 60px; overflow-y: auto; }
@@ -177,6 +182,7 @@
     <h3 class="mod-h" id="modTitle">NEW PRODUCT</h3>
     <form id="prodForm" onsubmit="saveProd(event)">
       <div class="fg2" style="display:flex;gap:15px;">
+        <input type="hidden" id="pDbId">
         <div class="fg" style="flex:1;"><label class="fl">Internal ID (e.g. nano)</label><input class="fi" id="pId" required></div>
         <div class="fg" style="flex:1;"><label class="fl">Series Code</label><input class="fi" id="pCode" placeholder="AL-S1 / NF"></div>
       </div>
@@ -378,10 +384,11 @@
           <div style="font-size:11px; color:#fff;">${new Date(o.createdAt).toLocaleDateString('en-IN', {day:'2-digit', month:'short'})}</div>
           <div style="font-size:10px; color:var(--muted);">${new Date(o.createdAt).toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'})}</div>
         </td>
-        <td><span class="pm-badge">${o.paymentMethod.toUpperCase()}</span></td>
+        <td><span class="pm-badge pm-${o.paymentMethod.toLowerCase()}">${o.paymentMethod.toUpperCase()}</span></td>
         <td>
           <div style="display:flex; align-items:center; gap:8px;">
             <select onclick="event.stopPropagation()" onchange="updStatus('${o.orderNum}', this.value)" style="background:var(--mid);color:#fff;border:1px solid #333;padding:5px;font-size:11px;flex:1;">
+              <option value="pending" ${o.status==='pending'?'selected':''}>PENDING</option>
               <option value="ordered" ${o.status==='ordered'?'selected':''}>ORDERED</option>
               <option value="processing" ${o.status==='processing'?'selected':''}>PROCESSING</option>
               <option value="shipped" ${o.status==='shipped'?'selected':''}>SHIPPED</option>
@@ -510,8 +517,9 @@
   function editP(id) {
     const p = allProducts.find(x => x.id === id);
     if(!p) return;
+    document.getElementById('pDbId').value = p._id;
     document.getElementById('pId').value = p.id;
-    document.getElementById('pId').readOnly = true;
+    document.getElementById('pId').readOnly = false; // Allow editing ID
     document.getElementById('pCode').value = p.code || '';
     document.getElementById('pName').value = p.name;
     document.getElementById('pSub').value = p.sub || '';
@@ -599,6 +607,7 @@
   function openProdMod(type = 'new') { 
     if(type==='new') {
       document.getElementById('prodForm').reset();
+      document.getElementById('pDbId').value = '';
       document.getElementById('pId').readOnly = false;
       document.getElementById('modTitle').textContent = 'NEW PRODUCT';
     }
@@ -625,6 +634,9 @@
     fd.append('hook', document.getElementById('pHook').value);
     fd.append('desc', document.getElementById('pDesc').value);
     fd.append('advantage', document.getElementById('pAdv').value);
+    
+    const dbId = document.getElementById('pDbId').value;
+    if (dbId) fd.append('_id', dbId);
     
     const steps = document.getElementById('pHow').value.split('\n').map(s => s.trim()).filter(s => s);
     fd.append('howToUse', JSON.stringify(steps));
