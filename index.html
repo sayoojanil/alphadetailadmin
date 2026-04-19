@@ -180,7 +180,7 @@
       </div>
       <div class="table-box">
         <table>
-          <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Joined</th><th>Action</th></tr></thead>
+          <thead><tr><th>Name</th><th>Email</th><th>Mobile</th><th>Role</th><th>Joined</th><th>Action</th></tr></thead>
           <tbody id="userList"></tbody>
         </table>
       </div>
@@ -591,7 +591,7 @@
     console.log(`📊 Exporting data for ${allUsers.length} users...`);
     
     // Header row
-    let csvRows = ['"Customer Name","Email","Role","Joined Date","Total Orders","Total Spent","Purchase History"'];
+    let csvRows = ['"Customer Name","Email","Phone","Address","Role","Joined Date","Total Orders","Total Spent","Purchase History"'];
 
     allUsers.forEach(u => {
       const userOrders = allOrders.filter(o => {
@@ -602,22 +602,36 @@
       const totalSpent = userOrders.reduce((sum, o) => sum + o.total, 0);
       const orderNums = userOrders.map(o => '#' + o.orderNum).join('; ');
       
+      const fullAddress = [
+        u.houseNo,
+        u.address,
+        u.landmark,
+        u.city,
+        u.district,
+        u.pin,
+        u.state,
+        u.country
+      ].filter(Boolean).join(', ');
+
       const row = [
-        `${u.firstName} ${u.lastName || ''}`,
+        `${u.firstName} ${u.lastName || ''}`.trim(),
         u.email,
+        `${u.phoneCode || '+91'} ${u.phone || ''}`.trim(),
+        fullAddress,
+
         u.role,
         new Date(u.createdAt).toLocaleDateString(),
         userOrders.length,
-        'Rs' + totalSpent,
+        'Rs ' + totalSpent,
         orderNums
       ];
       
-      // Escape each cell for CSV safety
-      const escapedRow = row.map(cell => `"${(cell || '').toString().replace(/"/g, '""')}"`).join(",");
+      // Escape each cell for CSV safety and remove any newlines to prevent misaligned rows in Excel
+      const escapedRow = row.map(cell => `"${(cell || '').toString().replace(/"/g, '""').replace(/[\r\n]+/g, ' ')}"`).join(",");
       csvRows.push(escapedRow);
     });
 
-    const csvString = csvRows.join("\n");
+    const csvString = "\uFEFF" + csvRows.join("\r\n");
     const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     
@@ -646,6 +660,7 @@
             </div>
           </td>
           <td>${u.email}</td>
+          <td>${u.phone}</td>
           <td><span class="status ${u.role==='admin'?'st-sh':'st-ord'}">${u.role.toUpperCase()}</span></td>
           <td>${new Date(u.createdAt).toLocaleDateString()}</td>
           <td>
