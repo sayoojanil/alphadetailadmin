@@ -124,7 +124,7 @@
 <div id="adminOverlay" class="sidebar-overlay" onclick="toggleAdmMenu()"></div>
 <div class="admin-wrap" id="adminDash" style="display:none;">
   <div class="mob-h-bar">
-    <img src="logo.png" alt="AlphaDetail" class="logo-img">
+    <img src="" alt="AlphaDetail" class="logo-img">
     <button class="hamburger-adm" onclick="toggleAdmMenu()"><i class="fa-solid fa-bars"></i> MENU</button>
   </div>
   <div class="sidebar" id="sidebar">
@@ -251,7 +251,7 @@
 
 <script>
   // const API = 'http://localhost:5000/api';
-  const API = 'https://alphadetailserver.vercel.app/api';
+  const API = 'https://alphadetailserver2026.vercel.app/api';
   let admUser = null;
   let isLoggingOut = false;
 
@@ -566,10 +566,11 @@
 
   async function loadUsers() {
     const listEl = document.getElementById('userList');
-    listEl.innerHTML = '<tr><td colspan="5"><div class="grid-loader"><div class="spinner"></div><div class="spinner-text">Retrieving User Accounts...</div></div></td></tr>';
+    listEl.innerHTML = '<tr><td colspan="6"><div class="grid-loader"><div class="spinner"></div><div class="spinner-text">Retrieving User Accounts...</div></div></td></tr>';
     
     try {
-      allUsers = await admReq('/users');
+      const resUsers = await admReq('/users');
+      allUsers = (resUsers || []).filter(u => u.role !== 'admin');
       // Update Stats
       document.getElementById('count-users').textContent = allUsers.length;
       
@@ -581,7 +582,7 @@
 
       renderUsers(allUsers);
     } catch(e) {
-      listEl.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:60px;color:var(--muted);letter-spacing:2px;font-size:11px;">UNABLE TO LOAD USERS.</td></tr>';
+      listEl.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:60px;color:var(--muted);letter-spacing:2px;font-size:11px;">UNABLE TO LOAD USERS.</td></tr>';
     }
   }
 
